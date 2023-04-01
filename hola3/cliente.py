@@ -3,7 +3,7 @@ import os
 import time
 
 # Dirección y puerto del servidor
-server_address = ("0.0.0.0", 5005)
+server_address = ("192.168.20.35", 5005)
 
 # Directorio donde se guardarán los archivos recibidos
 received_directory = 'ArchivosRecibidos'

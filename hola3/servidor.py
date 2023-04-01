@@ -4,7 +4,7 @@ import time
 import datetime
 
 # Definir la dirección y puerto en el que se espera recibir conexiones
-UDP_IP = "0.0.0.0"
+UDP_IP = "192.168.20.35"
 UDP_PORT = 5005
 
 # Tamaño máximo de cada paquete UDP
@@ -39,19 +39,13 @@ def main():
             data, addr = sock.recvfrom(MAX_PACKET_SIZE)
 
             # Preguntar al usuario por el tamaño del archivo
-            file_size = 0
-            while file_size not in FILES.values():
-                file_size = input("Ingrese el tamaño del archivo que desea enviar (100 o 250 MB): ")
-                try:
-                    file_size = int(file_size)
-                except ValueError:
-                    file_size = 0
+            
+            for i in range(len(list(FILES.keys()))):
+                print(i,"- "+list(FILES.keys())[i])
 
-            # Obtener el nombre del archivo según su tamaño
-            for file_data in FILES.values():
-                if file_data["size"] == file_size:
-                    file_name = file_data["name"]
-                    break
+            opcion = int(input("Ingrese el número de la opción del archivo a mandar: "))
+            file_name = list(FILES.keys())[opcion]
+            file_size = FILES[file_name]["size"]
 
             # Enviar mensaje de confirmación con el tamaño del archivo
             sock.sendto(str(file_size).encode(), addr)
