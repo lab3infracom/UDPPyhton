@@ -30,26 +30,32 @@ def main():
 
         # Verificar si se recibió un comando para enviar un archivo
         if data.decode() == "SEND":
+            print("Comando de envío recibido.")
             # Enviar mensaje de confirmación
             sock.sendto("READY".encode(), addr)
+            print("Mensaje de confirmación enviado.")
 
             # Recibir el nombre del archivo a enviar
             data, addr = sock.recvfrom(MAX_PACKET_SIZE)
             file_name = data.decode()
+            print(f"Nombre de archivo recibido: {file_name}")
 
             # Verificar si el archivo existe
             if file_name not in FILES:
                 sock.sendto("ERROR".encode(), addr)
+                print("Archivo no encontrado.")
                 continue
 
             # Enviar mensaje de confirmación con el tamaño del archivo
             file_size = os.path.getsize(FILES[file_name])
             sock.sendto(str(file_size).encode(), addr)
+            print(f"Tamaño de archivo enviado: {file_size} bytes")
 
             # Esperar mensaje de confirmación del cliente
             data, addr = sock.recvfrom(MAX_PACKET_SIZE)
             if data.decode() != "OK":
                 continue
+            print("Confirmación de cliente recibida.")
 
             # Abrir el archivo y enviarlo en paquetes
             with open(FILES[file_name], "rb") as f:
@@ -73,5 +79,5 @@ def main():
                 f.write(f"Tiempo de transferencia: {transfer_time} segundos\n")
                 f.write(f"Conexión recibida de: {addr}\n\n")
 
-if __name__ == '__main__':
+if __name__ == '_main_':
     main()

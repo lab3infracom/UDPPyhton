@@ -35,6 +35,7 @@ def receive_file(connection_num, file_size):
 
     # Si el servidor envía el tamaño del archivo, crear el archivo en el directorio correspondiente
     file_path = os.path.join(received_directory, f"Cliente{connection_num}-Prueba-{file_size}.txt")
+    print(f"Archivo a recibir: {file_path}")
     with open(file_path, 'wb') as f:
         bytes_received = 0
 
@@ -52,9 +53,10 @@ def receive_file(connection_num, file_size):
 
     # Mostrar mensaje de éxito y tiempo de recepción
     print(f"Archivo recibido correctamente en {end_time - start_time:.2f} segundos.")
+    print(f"Tamaño del archivo recibido: {os.path.getsize(file_path)} bytes.")
 
 
-if __name__ == '__main__':
+if __name__ == '_main_':
     # Crear directorio para archivos recibidos, si no existe
     os.makedirs(received_directory, exist_ok=True)
 
