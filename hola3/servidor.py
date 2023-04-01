@@ -11,14 +11,12 @@ UDP_PORT = 5005
 MAX_PACKET_SIZE = 65507
 
 # Archivos disponibles para envío
-FILES = {"file1": {"name": "100MB.txt", "size": 100 * 1024 * 1024},
-         "file2": {"name": "250MB.txt", "size": 250 * 1024 * 1024}}
+FILES = {"file1": "100MB.txt", "file2": "250MB.txt"}
 
 # Crear un directorio de logs si no existe
 LOG_DIR = "Logs"
 if not os.path.exists(LOG_DIR):
     os.mkdir(LOG_DIR)
-
 
 def main():
     # Crear socket UDP
@@ -37,17 +35,15 @@ def main():
 
             # Recibir el nombre del archivo a enviar
             data, addr = sock.recvfrom(MAX_PACKET_SIZE)
+            file_name = data.decode()
 
-            # Preguntar al usuario por el tamaño del archivo
-            
-            for i in range(len(list(FILES.keys()))):
-                print(i,"- "+list(FILES.keys())[i])
-
-            opcion = int(input("Ingrese el número de la opción del archivo a mandar: "))
-            file_name = list(FILES.keys())[opcion]
-            file_size = FILES[file_name]["size"]
+            # Verificar si el archivo existe
+            if file_name not in FILES:
+                sock.sendto("ERROR".encode(), addr)
+                continue
 
             # Enviar mensaje de confirmación con el tamaño del archivo
+            file_size = os.path.getsize(FILES[file_name])
             sock.sendto(str(file_size).encode(), addr)
 
             # Esperar mensaje de confirmación del cliente
@@ -56,7 +52,7 @@ def main():
                 continue
 
             # Abrir el archivo y enviarlo en paquetes
-            with open(os.path.join("data", file_name), "rb") as f:
+            with open(FILES[file_name], "rb") as f:
                 start_time = time.time()
                 while True:
                     data = f.read(MAX_PACKET_SIZE)
@@ -77,6 +73,5 @@ def main():
                 f.write(f"Tiempo de transferencia: {transfer_time} segundos\n")
                 f.write(f"Conexión recibida de: {addr}\n\n")
 
-
-if __name__ == "__main__":
+if __name__ == "_main_":
     main()
