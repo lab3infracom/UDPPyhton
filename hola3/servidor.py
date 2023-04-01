@@ -79,5 +79,5 @@ def main():
                 f.write(f"Tiempo de transferencia: {transfer_time} segundos\n")
                 f.write(f"Conexión recibida de: {addr}\n\n")
 
-if __name__ == '_main_':
+if __name__ == '__main__':
     main()
