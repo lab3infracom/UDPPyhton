@@ -1,72 +1,88 @@
-import socket
+# cliente de un servidor UPD en python
+
 import os
-import time
+import socket
+import sys
+import threading
+import datetime
+from time import time
+import queue as q
 
 # Dirección y puerto del servidor
-server_address = ("192.168.20.35", 5005)
-
-# Directorio donde se guardarán los archivos recibidos
-received_directory = 'ArchivosRecibidos'
-
-# Tamaño del buffer para recibir los datos
-buffer_size = 65507
+server_address = ('192.168.20.60', 3400)
 
 
-def receive_file(connection_num, file_size):
-    # Crear socket UDP
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+def recive_data(sock, i, queue, numConnections):
 
-    # Tiempo inicial de recepción
-    start_time = time.time()
+    # Guardar en la carpeta ArchivosRecibidos
+    file = open("UDP/ArchivosRecibidos/Cliente" + str(i) + "-Prueba-" + numConnections + ".txt", "w")
 
-    # Enviar solicitud de archivo al servidor
-    message = f"SEND {file_size}"
-    client_socket.sendto(message.encode(), server_address)
+    # Tamaño máximo de datagrama
+    MAX_PACKET_SIZE = 65507
 
-    # Esperar respuesta del servidor
-    response, server = client_socket.recvfrom(buffer_size)
-    response = response.decode()
+    # Recibir respuesta
+    print(sys.stderr, 'Cliente ' + str(i) + ' - ' + 'Esperando respuesta')
 
-    # Si el servidor envía una respuesta de error, mostrar mensaje y cerrar socket
-    if response.startswith('ERROR'):
-        print(response)
-        client_socket.close()
-        return
+    start_time = time()
+    data = b'data'
+    while data:
+        data, server = sock.recvfrom(MAX_PACKET_SIZE)
+        if data == b'FIN':
+            print(sys.stderr, 'Cliente ' + str(i) + ' - ' + 'Recibido "%s"' % data)
+            break
 
-    # Si el servidor envía el tamaño del archivo, crear el archivo en el directorio correspondiente
-    file_path = os.path.join(received_directory, f"Cliente{connection_num}-Prueba-{file_size}.txt")
-    print(f"Archivo a recibir: {file_path}")
-    with open(file_path, 'wb') as f:
-        bytes_received = 0
+        file.write(data.decode())
 
-        # Recibir los datos en fragmentos y escribirlos en el archivo
-        while bytes_received < int(response):
-            data, server = client_socket.recvfrom(buffer_size)
-            f.write(data)
-            bytes_received += len(data)
+    print(sys.stderr, 'Cliente ' + str(i) + ' - ' + 'Cerrando socket ' + str(i))
 
-    # Tiempo final de recepción
-    end_time = time.time()
+    end_time = time()
+    total_time = end_time - start_time
 
-    # Cerrar socket
-    client_socket.close()
+    sock.close()
 
-    # Mostrar mensaje de éxito y tiempo de recepción
-    print(f"Archivo recibido correctamente en {end_time - start_time:.2f} segundos.")
-    print(f"Tamaño del archivo recibido: {os.path.getsize(file_path)} bytes.")
+    # Colocar el tiempo total en la cola
+    queue.put(total_time)
 
 
-if __name__ == '_main_':
-    # Crear directorio para archivos recibidos, si no existe
-    os.makedirs(received_directory, exist_ok=True)
+if __name__ == "__main__":
 
-    # Obtener el tamaño del archivo a enviar del usuario
-    file_size = input("Seleccione el tamaño del archivo a enviar (100MB/250MB): ")
-    while file_size not in ["100MB", "250MB"]:
-        file_size = input("Tamaño no válido. Seleccione el tamaño del archivo a enviar (100MB/250MB): ")
+    idThread = 0
 
-    # Realizar las conexiones especificadas
-    for i in range(25):
-        print(f"Conexión {i+1}:")
-        receive_file(i+1, file_size)
-        print()
+    # Pedir al usuario el tamaño del mensaje y el número de clientes
+    init_message = input('Introduce el tamaño del mensaje: ').encode()
+    sec_message = input('Introduce el número de clientes: ')
+
+    # Obtener la fecha y hora actual para el nombre del archivo de logs
+    actual_date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
+    # Crear el archivo de logs
+    log = open('UDP/Logs/' + actual_date + '-log.txt', 'w')
+
+    for i in range(0, int(sec_message)):
+
+        # Crear un socket UDP
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        # Crear una cola para almacenar los tiempos de transferencia
+        queue = q.Queue()
+
+        # Enviar mensaje al servidor
+        sock.sendto(init_message, server_address)
+
+        # Iniciar los threads para la transferencia de datos
+        thread = threading.Thread(target=recive_data, args=(sock, i, queue, sec_message))
+        thread.start()
+
+        # Esperar a que el hilo termine
+        thread.join()
+
+        # Obtener el tiempo de transferencia de la cola
+        total_time = queue.get()
+
+        print(sys.stderr, total_time)
+
+        # Escribir la información de transferencia en el archivo de logs
+        log.write(f'[{i}], Archivo: {init_message.decode()}MB.txt, Tamaño: {os.path.getsize("UDP/ArchivosRecibidos/Cliente" + str(i) + "-Prueba-" + sec_message + ".txt")} bytes, Tiempo de transferencia: {total_time} segundos\n')
+
+        # Incrementar el ID del hilo
+        idThread += 1
